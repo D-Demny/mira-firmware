@@ -20,6 +20,7 @@ mkdir -p "$VLIB/bin" "$VSHARE/models" "$VSHARE/espeak-ng-data"
 install -m0755 "$VA"/bin/* "$VLIB/bin/"
 
 cp -a "$VA"/lib/. "$VLIB/"
+chmod 0755 "$VLIB/ld-linux-aarch64.so.1"
 
 cp -a "$VA"/models/melspectrogram.tflite \
       "$VA"/models/embedding_model.tflite \

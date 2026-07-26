@@ -15,7 +15,10 @@ sv check bluetooth_adapter > /dev/null 2>&1
 CONFIG_DIR="/var/local/etc/go-librespot"
 mkdir -p "$CONFIG_DIR"
 if [ ! -f "$CONFIG_DIR/config.yml" ]; then
-  cp /etc/go-librespot/config.yml "$CONFIG_DIR/config.yml"
+  cp /etc/go-librespot/config.yml "$CONFIG_DIR/config.yml.new"
+  sync
+  mv "$CONFIG_DIR/config.yml.new" "$CONFIG_DIR/config.yml"
+  sync
 fi
 rm -f "$CONFIG_DIR/lockfile"
 

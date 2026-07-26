@@ -36,6 +36,7 @@ else
   rm -rf "$OUT"
   mkdir -p "$OUT"
   cp -a "$VR/artifacts/." "$OUT/"
+  chmod 0755 "$OUT"/bin/* "$OUT"/lib/ld-linux-aarch64.so.1 2>/dev/null || true
 fi
 
 missing=""

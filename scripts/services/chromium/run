@@ -3,7 +3,28 @@
 exec 2>&1
 sv check weston > /dev/null || exit 1
 sv check mira-ui > /dev/null || exit 1
-sv check go-librespot > /dev/null || exit 1
+
+# wait for the daemon
+i=0
+until sv check go-librespot > /dev/null 2>&1; do
+  i=$((i + 1))
+  if [ "$i" -ge 45 ]; then
+    echo "CHROMIUM: go-librespot not up after ${i}s, starting UI anyway" > /dev/kmsg
+    break
+  fi
+  sleep 1
+done
+
+# crash loop breaking
+STARTS=/run/chromium.starts
+NOW=$(awk '{print int($1)}' /proc/uptime)
+RECENT=$(awk -v n="$NOW" '$1 >= n-300' "$STARTS" 2>/dev/null)
+if [ "$(printf '%s\n' "$RECENT" | grep -c .)" -ge 5 ]; then
+  echo "CHROMIUM: $(printf '%s\n' "$RECENT" | grep -c .) starts in 5min, resetting corrupt profile" > /dev/kmsg
+  rm -rf /var/cache/chrome_storage
+  RECENT=""
+fi
+{ [ -n "$RECENT" ] && printf '%s\n' "$RECENT"; echo "$NOW"; } > "$STARTS"
 
 export XDG_RUNTIME_DIR="/run/wayland/"
 export XDG_CACHE_HOME="/var/cache"
