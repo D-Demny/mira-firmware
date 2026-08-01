@@ -33,7 +33,8 @@ cp -a "$VA"/zipformer "$VSHARE/"
 cp -a "$VA"/espeak-ng-data/. "$VSHARE/espeak-ng-data/"
 
 CFG="$ROOTFS_PATH/etc/go-librespot/config.yml"
-awk '/^voice:/{exit} {print}' "$CFG" > "$CFG.tmp" && mv -f "$CFG.tmp" "$CFG"
+awk 'BEGIN{inv=0} /^voice:/{inv=1; next} inv && /^[^ \t#]/{inv=0} !inv{print}' \
+  "$CFG" > "$CFG.tmp" && mv -f "$CFG.tmp" "$CFG"
 cat >> "$CFG" <<'EOF'
 
 voice:

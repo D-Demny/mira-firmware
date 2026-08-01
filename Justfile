@@ -7,6 +7,7 @@ prepare:
     cd ../mira-daemon && ./crosscompile.sh armv6
     cp ../mira-daemon/go-librespot-armv6 ./go-librespot-armv6
     cp ../mira-daemon/config.yml ./go-librespot-config.yml
+    -[ -f ../mira-daemon/.report-key ] && sed -i "s|mira-reports.mira-thing.workers.dev/\"|mira-reports.mira-thing.workers.dev/?k=$(cat ../mira-daemon/.report-key)\"|" ./go-librespot-config.yml
     rm -f ./iap2-sidecar-armv7
     -cd ../mira-daemon && ./iap2/build.sh || echo ">> iap2 sidecar skipped (no rust toolchain?) - building WITHOUT iPhone volume"
     -cp ../mira-daemon/iap2/iap2-sidecar-armv7 ./iap2-sidecar-armv7 2>/dev/null || true
@@ -34,4 +35,6 @@ docker-build: prepare
     docker build -t firmware-builder .
 
 docker-run: docker-build
-    docker run --rm --privileged -e BUNDLE_VOICE -v ./output:/work/output firmware-builder:latest
+    # IMAGE_VERSION must be forwarded or the override silently does nothing and
+    # the image ships the internal v1.4.x counter instead of the release name
+    docker run --rm --privileged -e BUNDLE_VOICE -e IMAGE_VERSION -v ./output:/work/output firmware-builder:latest
