@@ -1,0 +1,133 @@
+name: Image build
+
+on:
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [upstream-push]
+  workflow_dispatch:
+    inputs:
+      daemon_ref:
+        description: mira-daemon ref to build
+        default: main
+      ui_ref:
+        description: mira-ui ref to build
+        default: main
+      bundle_voice:
+        description: bundle voice artifacts (1/0)
+        default: "1"
+
+concurrency:
+  group: image-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      BUNDLE_VOICE: ${{ github.event.inputs.bundle_voice || '1' }}
+    steps:
+      - name: log trigger
+        if: github.event_name == 'repository_dispatch'
+        run: echo "triggered by ${{ github.event.client_payload.repo }}@${{ github.event.client_payload.sha }}"
+
+      - uses: actions/checkout@v4
+        with:
+          path: mira-firmware
+      - uses: actions/checkout@v4
+        with:
+          repository: mira-thing/mira-daemon
+          ref: ${{ github.event.inputs.daemon_ref || 'main' }}
+          path: mira-daemon
+      - uses: actions/checkout@v4
+        with:
+          repository: mira-thing/mira-ui
+          ref: ${{ github.event.inputs.ui_ref || 'main' }}
+          path: mira-ui
+      - uses: actions/checkout@v4
+        with:
+          repository: mira-thing/mira-voice
+          path: mira-voice
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: mira-daemon/go.mod
+          cache-dependency-path: mira-daemon/go.sum
+      - name: build daemon
+        working-directory: mira-daemon
+        run: |
+          ./crosscompile.sh armv6
+          cp go-librespot-armv6 ../mira-firmware/
+          cp config.yml ../mira-firmware/go-librespot-config.yml
+
+      - name: build iap2 sidecar (armv7)
+        working-directory: mira-daemon
+        run: |
+          rustup target add armv7-unknown-linux-musleabihf
+          ./iap2/build.sh
+          cp iap2/iap2-sidecar-armv7 ../mira-firmware/
+
+      - name: inject report submit key
+        working-directory: mira-firmware
+        env:
+          KEY: ${{ secrets.REPORT_SUBMIT_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            sed -i "s|mira-reports.mira-thing.workers.dev/\"|mira-reports.mira-thing.workers.dev/?k=$KEY\"|" go-librespot-config.yml
+            echo "report key injected"
+          else
+            echo "no REPORT_SUBMIT_KEY secret - keyless build"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mira-ui/package-lock.json
+      - name: build ui
+        working-directory: mira-ui
+        run: |
+          npm ci
+          npm run build
+          cd dist && zip -r9 ../../mira-firmware/ui.zip .
+
+      - name: lyrics provider env (empty - lrclib fallback)
+        working-directory: mira-firmware
+        run: ': > lp.env'
+
+      - name: cache voice artifacts
+        if: env.BUNDLE_VOICE != '0'
+        uses: actions/cache@v4
+        with:
+          path: mira-firmware/voice-artifacts
+          key: voice-artifacts-${{ hashFiles('mira-voice/fetch-artifacts.sh') }}
+      - name: fetch voice artifacts
+        working-directory: mira-firmware
+        run: |
+          mkdir -p voice-artifacts
+          [ "$BUNDLE_VOICE" = "0" ] || VOICE_REPO=../mira-voice bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
+
+      - name: seed build number
+        working-directory: mira-firmware
+        run: echo "${{ github.run_number }}" > .build-number
+
+      - name: register qemu binfmt
+        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - name: docker build
+        working-directory: mira-firmware
+        run: docker build -t firmware-builder .
+      - name: build image
+        working-directory: mira-firmware
+        run: docker run --rm --privileged -e BUNDLE_VOICE -e IMAGE_VERSION=v1.0.0 -v "$PWD/output:/work/output" firmware-builder
+
+      - name: checksum
+        working-directory: mira-firmware
+        run: sha256sum output/*.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mira-firmware-image
+          path: mira-firmware/output/*.zip
+          retention-days: 14
+          if-no-files-found: error
