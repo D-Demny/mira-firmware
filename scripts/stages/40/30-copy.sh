@@ -20,5 +20,14 @@ cp "$CUSTOM_BOOT" "$IMAGE_PATH"/boot_b.dump
 
 cp "$RES_PATH"/flash/env.txt "$RES_PATH"/flash/logo.dump "$IMAGE_PATH"/
 
+# Flash recipe
+sed "s/@IMAGE_VERSION@/${IMAGE_VERSION#v}/" "$RES_PATH"/flash/meta.json > "$IMAGE_PATH"/meta.json
+cp "$RES_PATH"/kernel/superbird_evt_512.dtb "$IMAGE_PATH"/superbird.dtb
+cp "$RES_PATH"/flash/factory_dtb.bin "$IMAGE_PATH"/factory_dtb.bin
+{
+  cat "$RES_PATH"/flash/boot_hwpart_header.bin
+  head -c 2096640 "$RES_PATH"/stock-files/extract/bootloader.dump
+} > "$IMAGE_PATH"/boot_hwpart_mira.bin
+
 cd "$IMAGE_PATH"/ || exit 1
 zip -r9 "$OUTPUT_PATH"/mira_firmware_"$IMAGE_VERSION".zip .
