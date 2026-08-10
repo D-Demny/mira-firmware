@@ -7,8 +7,6 @@
 /ui.zip
 /voice-artifacts/
 
-# auto-incrementing patch build-number
-/.build-number
 
 # asset generators
 /internal/

@@ -108,10 +108,6 @@ jobs:
           mkdir -p voice-artifacts
           [ "$BUNDLE_VOICE" = "0" ] || VOICE_REPO=../mira-voice bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
 
-      - name: seed build number
-        working-directory: mira-firmware
-        run: echo "${{ github.run_number }}" > .build-number
-
       - name: register qemu binfmt
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
       - name: docker build
@@ -119,7 +115,7 @@ jobs:
         run: docker build -t firmware-builder .
       - name: build image
         working-directory: mira-firmware
-        run: docker run --rm --privileged -e BUNDLE_VOICE -e IMAGE_VERSION=v1.0.0 -v "$PWD/output:/work/output" firmware-builder
+        run: docker run --rm --privileged -e BUNDLE_VOICE -v "$PWD/output:/work/output" firmware-builder
 
       - name: checksum
         working-directory: mira-firmware

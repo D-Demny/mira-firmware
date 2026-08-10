@@ -1,9 +1,7 @@
 # Build the go-librespot armv6 binary and the UI dist zip,
 # then drop both into this firmware tree where build.sh expects them.
-# Also bump the patch build-number 
 prepare:
-    printf '%s\n' "$(( $(cat .build-number 2> /dev/null || echo 0) + 1 ))" > .build-number
-    @echo ">> build v0.4.$(cat .build-number)   (edit VERSION_MAJOR/VERSION_MINOR in build.sh to change the v0.4 part)"
+    @echo ">> building ${IMAGE_VERSION:-$(grep -m1 'IMAGE_VERSION:=' build.sh | sed 's/.*:="\(.*\)"}"*/\1/')}   (set in build.sh, or override with IMAGE_VERSION=vX.Y.Z just docker-run)"
     cd ../mira-daemon && ./crosscompile.sh armv6
     cp ../mira-daemon/go-librespot-armv6 ./go-librespot-armv6
     cp ../mira-daemon/config.yml ./go-librespot-config.yml

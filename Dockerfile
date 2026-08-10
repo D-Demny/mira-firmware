@@ -23,7 +23,7 @@ RUN curl -L https://github.com/pengutronix/genimage/archive/refs/tags/v18.tar.gz
 
 COPY resources/ /work/resources/
 COPY scripts/ /work/scripts/
-COPY docker-entrypoint.sh build.sh .build-number /work/
+COPY docker-entrypoint.sh build.sh /work/
 COPY go-librespot-armv6 ui.zip go-librespot-config.yml lp.env iap2-sidecar-armv7 /work/
 COPY voice-artifacts/ /work/voice-artifacts/
 

@@ -4,12 +4,8 @@ set -e
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Image build config
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Versioning: MAJOR/MINOR by hand. PATCH is an auto-incrementing
-# makes for build each build to be easily identifiable during iteration
-: "${VERSION_MAJOR:=1}"
-: "${VERSION_MINOR:=4}"
-: "${VERSION_PATCH:=$(cat .build-number 2> /dev/null || echo 0)}"
-: "${IMAGE_VERSION:="v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"}"
+# Versioning
+: "${IMAGE_VERSION:="v1.0.0"}"
 
 : "${VOID_BUILD:="20250202"}"
 : "${STATIC_WEB_SERVER_VERSION:="v2.38.0"}"
