@@ -135,6 +135,10 @@ jobs:
           mkdir -p voice-artifacts
           VOICE_REPO=../mira-voice bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
 
+      - name: ensure voice-artifacts dir exists (docker COPY requires it)
+        working-directory: mira-firmware
+        run: mkdir -p voice-artifacts
+
       - name: register qemu binfmt
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
