@@ -13,12 +13,15 @@ on:
       ui_ref:
         description: mira-ui ref to build
         default: main
+      firmware_ref:
+        description: mira-firmware ref to build
+        default: main
       bundle_voice:
         description: bundle voice artifacts (1/0)
         default: "1"
 
 concurrency:
-  group: image-build
+  group: image-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,29 +35,42 @@ jobs:
         if: github.event_name == 'repository_dispatch'
         run: echo "triggered by ${{ github.event.client_payload.repo }}@${{ github.event.client_payload.sha }}"
 
-      - uses: actions/checkout@v7
+      - name: checkout firmware repo
+        uses: actions/checkout@v7
         with:
+          repository: D-Demny/mira-firmware
+          ref: ${{ github.event.inputs.firmware_ref || 'main' }}
           path: mira-firmware
-      - uses: actions/checkout@v7
+
+      - name: checkout daemon repo
+        uses: actions/checkout@v7
         with:
-          repository: mira-thing/mira-daemon
+          repository: D-Demny/mira-daemon
           ref: ${{ github.event.inputs.daemon_ref || 'main' }}
           path: mira-daemon
-      - uses: actions/checkout@v7
+
+      - name: checkout ui repo
+        uses: actions/checkout@v7
         with:
-          repository: mira-thing/mira-ui
+          repository: D-Demny/mira-ui
           ref: ${{ github.event.inputs.ui_ref || 'main' }}
           path: mira-ui
-      - uses: actions/checkout@v7
-        with:
-          repository: mira-thing/mira-voice
-          path: mira-voice
 
-      - uses: actions/setup-go@v7
+      - name: checkout voice repo (optional)
+        uses: actions/checkout@v7
+        with:
+          repository: D-Demny/mira-voice
+          path: mira-voice
+          persist-credentials: false
+          continue-on-error: true
+
+      - name: setup go
+        uses: actions/setup-go@v7
         with:
           go-version-file: mira-daemon/go.mod
           cache-dependency-path: mira-daemon/go.sum
-      - name: build daemon
+
+      - name: build daemon (armv6)
         working-directory: mira-daemon
         run: |
           ./crosscompile.sh armv6
@@ -80,11 +96,13 @@ jobs:
             echo "no REPORT_SUBMIT_KEY secret - keyless build"
           fi
 
-      - uses: actions/setup-node@v7
+      - name: setup node
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: mira-ui/package-lock.json
+
       - name: build ui
         working-directory: mira-ui
         run: |
@@ -97,12 +115,14 @@ jobs:
         run: ': > lp.env'
 
       - name: cache voice artifacts
-        if: env.BUNDLE_VOICE != '0'
+        if: env.BUNDLE_VOICE != '0' && hashFiles('mira-voice/fetch-artifacts.sh') != ''
         uses: actions/cache@v6
         with:
           path: mira-firmware/voice-artifacts
           key: voice-artifacts-${{ hashFiles('mira-voice/fetch-artifacts.sh') }}
+
       - name: fetch voice artifacts
+        if: env.BUNDLE_VOICE != '0'
         working-directory: mira-firmware
         run: |
           mkdir -p voice-artifacts
@@ -110,9 +130,11 @@ jobs:
 
       - name: register qemu binfmt
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
       - name: docker build
         working-directory: mira-firmware
         run: docker build -t firmware-builder .
+
       - name: build image
         working-directory: mira-firmware
         run: docker run --rm --privileged -e BUNDLE_VOICE -v "$PWD/output:/work/output" firmware-builder
