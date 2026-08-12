@@ -57,12 +57,15 @@ jobs:
           path: mira-ui
 
       - name: checkout voice repo (optional)
-        uses: actions/checkout@v7
-        with:
-          repository: D-Demny/mira-voice
-          path: mira-voice
-          persist-credentials: false
-          continue-on-error: true
+        run: |
+          if curl -sfL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/D-Demny/mira-voice" >/dev/null 2>&1; then
+            echo "mira-voice repo exists, checking out..."
+            git clone --depth 1 https://github.com/D-Demny/mira-voice.git mira-voice || echo "clone failed, continuing without voice"
+          else
+            echo "mira-voice repo not found, skipping voice artifacts"
+            rm -rf mira-voice
+          fi
 
       - name: setup go
         uses: actions/setup-go@v7
@@ -114,19 +117,17 @@ jobs:
         working-directory: mira-firmware
         run: ': > lp.env'
 
-      - name: cache voice artifacts
-        if: env.BUNDLE_VOICE != '0' && hashFiles('mira-voice/fetch-artifacts.sh') != ''
-        uses: actions/cache@v6
-        with:
-          path: mira-firmware/voice-artifacts
-          key: voice-artifacts-${{ hashFiles('mira-voice/fetch-artifacts.sh') }}
-
       - name: fetch voice artifacts
         if: env.BUNDLE_VOICE != '0'
         working-directory: mira-firmware
         run: |
           mkdir -p voice-artifacts
-          [ "$BUNDLE_VOICE" = "0" ] || VOICE_REPO=../mira-voice bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
+          if [ -d "../mira-voice" ] && [ -f "../mira-voice/fetch-artifacts.sh" ]; then
+            echo "fetching voice artifacts from local mira-voice repo"
+            VOICE_REPO=../mira-voice bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
+          else
+            echo "mira-voice repo not available, skipping voice artifacts"
+          fi
 
       - name: register qemu binfmt
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
