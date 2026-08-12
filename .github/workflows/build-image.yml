@@ -67,6 +67,17 @@ jobs:
             rm -rf mira-voice
           fi
 
+      - name: detect voice artifacts availability
+        id: voice_check
+        run: |
+          if [ -d "mira-voice" ] && [ -f "mira-voice/collect-artifacts.sh" ]; then
+            echo "voice_available=true" >> "$GITHUB_OUTPUT"
+            echo "Voice repo available"
+          else
+            echo "voice_available=false" >> "$GITHUB_OUTPUT"
+            echo "Voice repo not available, will skip voice artifacts"
+          fi
+
       - name: setup go
         uses: actions/setup-go@v7
         with:
@@ -118,16 +129,11 @@ jobs:
         run: ': > lp.env'
 
       - name: fetch voice artifacts
-        if: env.BUNDLE_VOICE != '0'
+        if: env.BUNDLE_VOICE != '0' && steps.voice_check.outputs.voice_available == 'true'
         working-directory: mira-firmware
         run: |
           mkdir -p voice-artifacts
-          if [ -d "../mira-voice" ] && [ -f "../mira-voice/fetch-artifacts.sh" ]; then
-            echo "fetching voice artifacts from local mira-voice repo"
-            VOICE_REPO=../mira-voice bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
-          else
-            echo "mira-voice repo not available, skipping voice artifacts"
-          fi
+          VOICE_REPO=../mira-voice bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
 
       - name: register qemu binfmt
         run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
@@ -138,7 +144,12 @@ jobs:
 
       - name: build image
         working-directory: mira-firmware
-        run: docker run --rm --privileged -e BUNDLE_VOICE -v "$PWD/output:/work/output" firmware-builder
+        run: |
+          BV="${{ env.BUNDLE_VOICE }}"
+          if [ "${{ steps.voice_check.outputs.voice_available }}" != "true" ]; then
+            BV="0"
+          fi
+          docker run --rm --privileged -e BUNDLE_VOICE="$BV" -v "$PWD/output:/work/output" firmware-builder
 
       - name: checksum
         working-directory: mira-firmware
