@@ -18,7 +18,7 @@ prepare:
     cd ../mira-ui/dist && zip -r9 {{justfile_directory()}}/ui.zip .
     # Voice bundle
     mkdir -p ./voice-artifacts
-    [ "${BUNDLE_VOICE:-1}" = "0" ] || bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
+    [ "${BUNDLE_VOICE:-0}" = "0" ] || bash ./scripts/get-voice-artifacts.sh ./voice-artifacts
 
 run: prepare
     sudo ./build.sh

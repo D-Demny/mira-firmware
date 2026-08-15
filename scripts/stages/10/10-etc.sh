@@ -15,10 +15,15 @@ sed -i "/^root/d" "$ROOTFS_PATH"/etc/shadow
 echo "root:${root_pw}:19000:0:99999::::" >> "$ROOTFS_PATH"/etc/shadow
 "$HELPERS_PATH"/chroot_exec.sh chsh -s /bin/bash root
 
-cp "$RES_PATH"/config/sshd_config "$ROOTFS_PATH"/etc/sshd_config
+mkdir -p "$ROOTFS_PATH"/etc/ssh
+cp "$RES_PATH"/config/sshd_config "$ROOTFS_PATH"/etc/ssh/sshd_config
+chmod 600 "$ROOTFS_PATH"/etc/ssh/sshd_config
 
-rm -rf "$ROOTFS_PATH"/etc/ssh
-ln -sf /var/local/etc/ssh "$ROOTFS_PATH"/etc/ssh
+mkdir -p "$ROOTFS_PATH"/root/.ssh
+if [ -f "$RES_PATH"/config/ssh_authorized_keys ]; then
+  cp "$RES_PATH"/config/ssh_authorized_keys "$ROOTFS_PATH"/root/.ssh/authorized_keys
+  chmod 600 "$ROOTFS_PATH"/root/.ssh/authorized_keys
+fi
 
 cat > "$ROOTFS_PATH"/etc/sv/sshd/conf << 'EOF'
 iptables -C INPUT -i bnep0 -p tcp --dport 22 -j REJECT 2>/dev/null || \

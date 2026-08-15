@@ -14,7 +14,7 @@ set -e
 # System config
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 : "${DEFAULT_HOSTNAME:="thing"}"
-: "${DEFAULT_ROOT_PASSWORD:="thing"}"
+: "${DEFAULT_ROOT_PASSWORD:="mira"}"
 : "${DEFAULT_SERVICES:=""}"
 
 # cap on the partition sizes, we cannot exceed this
