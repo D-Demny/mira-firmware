@@ -25,6 +25,11 @@ if [ -f "$RES_PATH"/config/ssh_authorized_keys ]; then
   chmod 600 "$ROOTFS_PATH"/root/.ssh/authorized_keys
 fi
 
+# Generate SSH host keys at build time so sshd can start even when the
+# firstboot flag is not set (data partition preserved across flashes)
+"$HELPERS_PATH"/chroot_exec.sh /usr/bin/ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N "" -q
+"$HELPERS_PATH"/chroot_exec.sh /usr/bin/ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N "" -q
+
 cat > "$ROOTFS_PATH"/etc/sv/sshd/conf << 'EOF'
 iptables -C INPUT -i bnep0 -p tcp --dport 22 -j REJECT 2>/dev/null || \
     iptables -I INPUT -i bnep0 -p tcp --dport 22 -j REJECT || \

@@ -25,12 +25,14 @@ if [ "${firstboot}" -eq 1 ]; then
     /usr/bin/uenv set firstboot 0 \
       || echo "firstboot: FAILED to clear firstboot flag; data will be wiped again next boot!" >&2
   fi
-  
-  # Generate SSH host keys on first boot if they don't exist
-  if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then
-    ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N "" -q
-  fi
-  if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
-    ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N "" -q
-  fi
+fi
+
+# Generate SSH host keys on every boot if they don't exist (the rootfs is
+# replaced on each flash, so this is the fallback when the firstboot flag
+# was not set and the build-time keys are missing)
+if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then
+  ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N "" -q
+fi
+if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
+  ssh-keygen -t rsa -b 4096 -f /etc/ssh/ssh_host_rsa_key -N "" -q
 fi
