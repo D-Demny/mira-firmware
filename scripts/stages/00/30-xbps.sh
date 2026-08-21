@@ -2,7 +2,9 @@
 
 curl -L https://repo-default.voidlinux.org/live/current/void-armv7l-ROOTFS-"$VOID_BUILD".tar.xz | tar -xJ -C "$ROOTFS_PATH"
 
-echo "repository=https://mirrors.servercentral.com/voidlinux/current" > "$ROOTFS_PATH"/etc/xbps.d/00-repository-main.conf
+# official default repository — mirrors.servercentral.com was intermittently
+# unreachable ("Operation not permitted") and broke xbps-install in CI
+echo "repository=https://repo-default.voidlinux.org/current" > "$ROOTFS_PATH"/etc/xbps.d/00-repository-main.conf
 
 xbps-install -r "$ROOTFS_PATH" -Suy xbps
 xbps-install -r "$ROOTFS_PATH" -uy
