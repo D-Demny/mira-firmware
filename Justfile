@@ -5,6 +5,8 @@ prepare:
     cd ../mira-daemon && ./crosscompile.sh armv6
     cp ../mira-daemon/go-librespot-armv6 ./go-librespot-armv6
     cp ../mira-daemon/config.yml ./go-librespot-config.yml
+    # epic 10: Pi provisioning wizard, installed into the rootfs by stage 20
+    cp ../mira-daemon/scripts/setup-pi.sh ./setup-pi.sh
     -[ -f ../mira-daemon/.report-key ] && sed -i "s|mira-reports.mira-thing.workers.dev/\"|mira-reports.mira-thing.workers.dev/?k=$(cat ../mira-daemon/.report-key)\"|" ./go-librespot-config.yml
     rm -f ./iap2-sidecar-armv7
     -cd ../mira-daemon && ./iap2/build.sh || echo ">> iap2 sidecar skipped (no rust toolchain?) - building WITHOUT iPhone volume"

@@ -1,6 +1,8 @@
 #!/bin/sh
 
-xbps-install -r "$ROOTFS_PATH" -y openssh iptables
+# sshpass: the epic 10 provisioning wizard (setup-pi.sh) authenticates to the
+# USB-Ethernet-connected Pi non-interactively (sshpass -e via SSHPASS env)
+xbps-install -r "$ROOTFS_PATH" -y openssh iptables sshpass
 
 rm -f "$ROOTFS_PATH"/etc/motd "$ROOTFS_PATH"/etc/fstab
 cp "$RES_PATH"/config/motd "$ROOTFS_PATH"/etc/motd
