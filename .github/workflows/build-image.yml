@@ -90,6 +90,8 @@ jobs:
           ./crosscompile.sh armv6
           cp go-librespot-armv6 ../mira-firmware/
           cp config.yml ../mira-firmware/go-librespot-config.yml
+          # epic 10: Pi provisioning wizard, installed into the rootfs by stage 20 (mirrors Justfile prepare)
+          cp ../mira-daemon/scripts/setup-pi.sh ../mira-firmware/
 
       - name: build iap2 sidecar (armv7)
         working-directory: mira-daemon
