@@ -7,6 +7,8 @@ prepare:
     cp ../mira-daemon/config.yml ./go-librespot-config.yml
     # epic 10: Pi provisioning wizard, installed into the rootfs by stage 20
     cp ../mira-daemon/scripts/setup-pi.sh ./setup-pi.sh
+    # epic 10 ticket10-6: USB-tethering setup, installed into the rootfs by stage 20
+    cp ../mira-daemon/scripts/setup-tethering.sh ./setup-tethering.sh
     -[ -f ../mira-daemon/.report-key ] && sed -i "s|mira-reports.mira-thing.workers.dev/\"|mira-reports.mira-thing.workers.dev/?k=$(cat ../mira-daemon/.report-key)\"|" ./go-librespot-config.yml
     rm -f ./iap2-sidecar-armv7
     -cd ../mira-daemon && ./iap2/build.sh || echo ">> iap2 sidecar skipped (no rust toolchain?) - building WITHOUT iPhone volume"

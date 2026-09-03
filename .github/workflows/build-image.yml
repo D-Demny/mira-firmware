@@ -92,6 +92,8 @@ jobs:
           cp config.yml ../mira-firmware/go-librespot-config.yml
           # epic 10: Pi provisioning wizard, installed into the rootfs by stage 20 (mirrors Justfile prepare)
           cp ../mira-daemon/scripts/setup-pi.sh ../mira-firmware/
+          # epic 10 ticket10-6: USB-tethering setup (mirrors Justfile prepare)
+          cp ../mira-daemon/scripts/setup-tethering.sh ../mira-firmware/
 
       - name: build iap2 sidecar (armv7)
         working-directory: mira-daemon
