@@ -7,6 +7,8 @@ prepare:
     cp ../mira-daemon/config.yml ./go-librespot-config.yml
     # epic 10: Pi provisioning wizard, installed into the rootfs by stage 20
     cp ../mira-daemon/scripts/setup-pi.sh ./setup-pi.sh
+    # epic 10 follow-up: the pi compute server (transferred by setup-pi.sh), installed by stage 20
+    cp ../mira-daemon/scripts/compute-server.js ./compute-server.js
     # epic 10 ticket10-6: USB-tethering setup, installed into the rootfs by stage 20
     cp ../mira-daemon/scripts/setup-tethering.sh ./setup-tethering.sh
     -[ -f ../mira-daemon/.report-key ] && sed -i "s|mira-reports.mira-thing.workers.dev/\"|mira-reports.mira-thing.workers.dev/?k=$(cat ../mira-daemon/.report-key)\"|" ./go-librespot-config.yml
