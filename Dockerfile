@@ -7,7 +7,9 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 RUN xbps-install -Suy xbps
 
-RUN xbps-install -uy bash curl dosfstools e2fsprogs findutils util-linux gzip \
+# acl is listed explicitly: base image is a frozen snapshot, and -uy only upgrades the
+# packages named here — rsync >= 3.5 needs ACL_1.3 which the snapshot's libacl lacks.
+RUN xbps-install -uy acl bash curl dosfstools e2fsprogs findutils util-linux gzip \
     git m4 mtools pigz tar zstd xz zip mkpasswd zip unzip just rsync \
     autoconf automake libtool pkg-config make gcc confuse-devel openssl patchelf
 
