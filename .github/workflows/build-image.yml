@@ -114,6 +114,65 @@ jobs:
             echo "no REPORT_SUBMIT_KEY secret - keyless build"
           fi
 
+      - name: inject home assistant credentials
+        working-directory: mira-firmware
+        env:
+          HA_URL: ${{ secrets.HA_URL }}
+          HA_TOKEN: ${{ secrets.HA_TOKEN }}
+        run: |
+          if [ -n "$HA_URL" ] && [ -n "$HA_TOKEN" ]; then
+            python3 - <<'PY'
+          import os
+          import re
+          import sys
+
+          path = "go-librespot-config.yml"
+          url = os.environ["HA_URL"]
+          token = os.environ["HA_TOKEN"]
+
+
+          def quote(value):
+              return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+          with open(path) as f:
+              lines = f.readlines()
+
+          out = []
+          in_block = False
+          found_url = False
+          found_token = False
+
+          for line in lines:
+              if not line.startswith(" "):
+                  in_block = bool(re.match(r"^homeassistant:\s*$", line))
+                  out.append(line)
+                  continue
+              if in_block and not found_url and re.match(r"^\s*url:", line):
+                  indent = line[: len(line) - len(line.lstrip())]
+                  out.append(indent + "url: " + quote(url) + "\n")
+                  found_url = True
+                  continue
+              if in_block and not found_token and re.match(r"^\s*token:", line):
+                  indent = line[: len(line) - len(line.lstrip())]
+                  out.append(indent + "token: " + quote(token) + "\n")
+                  found_token = True
+                  continue
+              out.append(line)
+
+          missing = [k for k, ok in (("url", found_url), ("token", found_token)) if not ok]
+          if missing:
+              sys.exit("homeassistant block rewrite failed: %s line(s) not found in %s"
+                       % (", ".join(missing), path))
+
+          with open(path, "w") as f:
+              f.writelines(out)
+          PY
+            echo "home assistant url/token injected"
+          else
+            echo "no HA_URL/HA_TOKEN secrets - keeping shipped defaults"
+          fi
+
       - name: setup node
         uses: actions/setup-node@v7
         with:
