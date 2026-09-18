@@ -12,14 +12,15 @@ sv check clock_floor > /dev/null 2>&1
 sv check bluetooth_adapter > /dev/null 2>&1
 
 # NTP gate moved inside the daemon
+# config.yml is 100% build-managed (report key + HA credentials injected in CI) and holds no
+# user data (Spotify creds: credentials.json; UI settings: state.json), so re-copy it on every
+# service start — the copy-if-missing guard left pre-existing installs on /var with stale creds.
 CONFIG_DIR="/var/local/etc/go-librespot"
 mkdir -p "$CONFIG_DIR"
-if [ ! -f "$CONFIG_DIR/config.yml" ]; then
-  cp /etc/go-librespot/config.yml "$CONFIG_DIR/config.yml.new"
-  sync
-  mv "$CONFIG_DIR/config.yml.new" "$CONFIG_DIR/config.yml"
-  sync
-fi
+cp /etc/go-librespot/config.yml "$CONFIG_DIR/config.yml.new"
+sync
+mv "$CONFIG_DIR/config.yml.new" "$CONFIG_DIR/config.yml"
+sync
 rm -f "$CONFIG_DIR/lockfile"
 
 # primary lyrics provider config
