@@ -108,8 +108,21 @@ jobs:
           KEY: ${{ secrets.REPORT_SUBMIT_KEY }}
         run: |
           if [ -n "$KEY" ]; then
-            sed -i "s|mira-reports.mira-thing.workers.dev/\"|mira-reports.mira-thing.workers.dev/?k=$KEY\"|" go-librespot-config.yml
-            echo "report key injected"
+            injected=0
+            if grep -q 'mira-reports.mira-thing.workers.dev/' go-librespot-config.yml; then
+              # pre-zero daemon ref: report_url still carries the endpoint - append key to it
+              sed -i "s|mira-reports.mira-thing.workers.dev/\"|mira-reports.mira-thing.workers.dev/?k=$KEY\"|" go-librespot-config.yml
+              injected=1
+            elif grep -Eq '^report_url:[[:space:]]*""' go-librespot-config.yml; then
+              # zero-outbound default: report_url is blank - write the full endpoint with key
+              sed -i "s|^report_url:[[:space:]]*\"\".*$|report_url: \"https://mira-reports.mira-thing.workers.dev/?k=$KEY\"|" go-librespot-config.yml
+              injected=1
+            fi
+            if [ "$injected" -eq 1 ]; then
+              echo "report key injected"
+            else
+              echo "warning: report_url is neither blank nor the known endpoint - key NOT injected"
+            fi
           else
             echo "no REPORT_SUBMIT_KEY secret - keyless build"
           fi

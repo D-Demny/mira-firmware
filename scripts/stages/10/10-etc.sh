@@ -14,6 +14,16 @@ cp "$RES_PATH"/config/fstab "$ROOTFS_PATH"/etc/fstab
 
 ln -sf /var/local/etc/localtime "$ROOTFS_PATH"/etc/localtime
 
+# Seed the target of the symlink above: at runtime /dev/data is mounted over
+# /var (resources/config/fstab) and a fresh data partition is populated from
+# this rootfs /var tree by `mkfs.ext4 -d /var` in reset-data, so anything
+# under /var/local here survives firstboot onto the writable partition.
+# Regular file rather than symlink so every copy path (mke2fs -d, cp) keeps
+# it intact. tzdata ships with base-thing (run_depends in its props.plist),
+# installed by stage 00/30-xbps.sh before this stage runs.
+mkdir -p "$ROOTFS_PATH"/var/local/etc
+cp "$ROOTFS_PATH"/usr/share/zoneinfo/Europe/Berlin "$ROOTFS_PATH"/var/local/etc/localtime
+
 echo "$DEFAULT_HOSTNAME" > "$ROOTFS_PATH"/etc/hostname
 
 root_pw=$(mkpasswd -m sha-512 -s "$DEFAULT_ROOT_PASSWORD")
