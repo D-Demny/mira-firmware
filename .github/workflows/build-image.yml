@@ -186,6 +186,28 @@ jobs:
             echo "no HA_URL/HA_TOKEN secrets - keeping shipped defaults"
           fi
 
+      - name: inject liked songs playlist uri
+        working-directory: mira-firmware
+        env:
+          LIKED_URI: ${{ secrets.LIKED_PLAYLIST_URI }}
+        run: |
+          # issue #84: the real per-user "Liked Songs" playlist URI is a
+          # per-account value (the pseudo collection context is rejected by
+          # Connect receivers), so — like HA_TOKEN above — it is NOT committed
+          # to any repo. It lives in this repo's Actions secrets and lands only
+          # in the built image's go-librespot-config.yml, where the daemon seeds
+          # it into state.json on first boot (daemon Config.LikedPlaylistURI).
+          if [ -n "$LIKED_URI" ]; then
+            if grep -Eq '^liked_playlist_uri:[[:space:]]*""' go-librespot-config.yml; then
+              sed -i "s|^liked_playlist_uri:[[:space:]]*\"\".*$|liked_playlist_uri: \"$LIKED_URI\"|" go-librespot-config.yml
+              echo "liked songs playlist uri injected"
+            else
+              echo "warning: liked_playlist_uri line not found in go-librespot-config.yml - URI NOT injected (daemon ref predates issue #84?)"
+            fi
+          else
+            echo "no LIKED_PLAYLIST_URI secret - keeping shipped default"
+          fi
+
       - name: setup node
         uses: actions/setup-node@v7
         with:
