@@ -143,6 +143,14 @@ jobs:
           url = os.environ["HA_URL"]
           token = os.environ["HA_TOKEN"]
 
+          # fail fast on malformed values (2026-10-08: a bad re-bake once put the
+          # credential file's "url: " yaml prefix INTO the HA_URL secret, so the
+          # image config got url: "url: host:port" and /ha-api 503'd on every
+          # fresh flash until the user saved URL+token by hand in UI settings)
+          if " " in url or re.match(r"^url:", url):
+              sys.exit("HA_URL secret looks malformed (space or 'url:' prefix, len=%d)"
+                       " - check the secrets re-bake step" % len(url))
+
 
           def quote(value):
               return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
