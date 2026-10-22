@@ -22,11 +22,20 @@ trap cleanup EXIT
 ########################
 
 FIRMWARE_URL="https://thingify.tools/files/blob/${FIRMWARE_ID}/${VERSION_ID}/${FILE_ID}?name=8.9.2-thinglabs.zip"
+# 2026-10-22: the thingify.tools DNS zone answers NOTIMP (rcode 3) to Google,
+# Quad9 and Cloudflare - globally unresolvable, site down with no public outage
+# reports. The 2025-06-19 Wayback Machine capture of this exact file (WARC
+# sha1 LVWR5KVMPJPAFSTACKYMZETQEO6MAEFE, verified byte-identical) serves as
+# fallback so image builds keep working while the domain stays down.
+FIRMWARE_URL_FALLBACK="https://web.archive.org/web/20250619012337id_/https://thingify.tools/files/blob/${FIRMWARE_ID}/${VERSION_ID}/${FILE_ID}?name=8.9.2-thinglabs.zip"
 FIRMWARE_BASENAME="8.9.2-thinglabs.zip"
 FIRMWARE_FILE="${WORK_PATH}/${FIRMWARE_BASENAME}"
 
 echo "Downloading ${FIRMWARE_URL}"
-curl -Lo "$FIRMWARE_FILE" "$FIRMWARE_URL"
+if ! curl -fL --retry 2 --retry-delay 5 -o "$FIRMWARE_FILE" "$FIRMWARE_URL"; then
+  echo "Primary firmware URL failed, falling back to ${FIRMWARE_URL_FALLBACK}" >&2
+  curl -fL --retry 3 --retry-delay 10 -o "$FIRMWARE_FILE" "$FIRMWARE_URL_FALLBACK"
+fi
 
 echo "Unzipping firmware"
 rm "$EXTRACT_PATH"/* 2> /dev/null || true
